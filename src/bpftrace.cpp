@@ -153,25 +153,65 @@ std::set<std::string> BPFtrace::find_wildcard_matches(const std::string &prefix,
 {
   if (!has_wildcard(func))
     return std::set<std::string>({func});
-  // Turn glob into a regex
-  auto regex_str = "(" + std::regex_replace(func, std::regex("\\*"), "[^\\s]*") + ")";
-  if (prefix != "")
-    regex_str = prefix + ":" + regex_str;
-  regex_str = "^" + regex_str;
-  std::regex func_regex(regex_str);
-  std::smatch match;
+  bool start_wildcard = func[0] == '*';
+  bool end_wildcard = func[func.length() - 1] == '*';
+
+  // TODO(mmarchini): turn this into a helper function. Add tests
+  std::vector<std::string> tokens;
+  size_t next = start_wildcard ? 1 : 0;
+  size_t end = func.length();
+  while (next < end) {
+    size_t found = func.find('*', next);
+    std::string token;
+    if (found == end) {
+      token = func.substr(next, end - next);
+      next = end;
+    } else if (found == std::string::npos) {
+      token = func.substr(next, end - next);
+      next = end;
+    } else {
+      token = func.substr(next, found - next);
+      next = found + 1;
+    }
+    tokens.push_back(token);
+  }
 
   std::string line;
   std::set<std::string> matches;
+  std::string full_prefix = prefix.empty() ? "" : (prefix + ":");
   while (std::getline(symbol_name_stream, line))
   {
-    if (std::regex_search(line, match, func_regex))
-    {
-      assert(match.size() == 2);
-      // skip the ".part.N" kprobe variants, as they can't be traced:
-      if (std::strstr(match.str(1).c_str(), ".part.") == NULL)
-        matches.insert(match[1]);
+    size_t next = 0;
+    if (!full_prefix.empty()) {
+      if (line.find(full_prefix, next) == std::string::npos)
+        continue;
+      line = line.substr(full_prefix.length());
     }
+
+    if (!start_wildcard)
+      if (line.find(tokens[0], next) != next)
+        continue;
+
+    bool cool = true;
+    for (std::string token : tokens) {
+      size_t found = line.find(token, next);
+      if (found == std::string::npos) {
+        cool = false;
+        break;
+      }
+
+      next = found + token.length();
+    }
+    if (!cool) continue;
+
+    if (!end_wildcard)
+      if (line.length() != next)
+        continue;
+
+    if (line.find(".part.") != std::string::npos)
+      continue;
+
+    matches.insert(line);
   }
   return matches;
 }
