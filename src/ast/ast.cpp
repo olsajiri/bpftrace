@@ -5,6 +5,8 @@
 namespace bpftrace {
 namespace ast {
 
+std::vector<std::string> Expression::resolve = std::vector<std::string>();
+
 void Integer::accept(Visitor &v) {
   v.visit(*this);
 }

@@ -34,6 +34,7 @@ public:
   bool is_map = false;
   Expression() : Node(){};
   Expression(location loc) : Node(loc){};
+  static std::vector<std::string> resolve;
 };
 using ExpressionList = std::vector<Expression *>;
 
@@ -81,7 +82,10 @@ public:
 
 class Builtin : public Expression {
 public:
-  explicit Builtin(std::string ident) : ident(is_deprecated(ident)) {}
+  explicit Builtin(std::string ident) : ident(is_deprecated(ident)) {
+    if (ident == "curtask")
+      resolve.push_back(dent);
+  }
   std::string ident;
   int probe_id;
 
@@ -159,7 +163,9 @@ public:
 class Cast : public Expression {
 public:
   Cast(const std::string &type, bool is_pointer, Expression *expr)
-    : cast_type(type), is_pointer(is_pointer), expr(expr) { }
+    : cast_type(type), is_pointer(is_pointer), expr(expr) {
+    resolve.push_back(type);
+  }
   std::string cast_type;
   bool is_pointer;
   Expression *expr;
