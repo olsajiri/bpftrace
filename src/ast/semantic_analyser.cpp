@@ -108,6 +108,14 @@ void SemanticAnalyser::visit(Builtin &builtin)
         err_ << "BPF_FUNC_get_current_cgroup_id is not available for your kernel version" << std::endl;
       #endif
     }
+    /*
+     * Retype curtask to its original type: struct task_truct.
+     */
+    if (builtin.ident == "curtask") {
+      builtin.type.type = Type::cast;
+      builtin.type.cast_type = "task_struct";
+      builtin.type.is_pointer = true;
+    }
   }
   else if (builtin.ident == "retval") {
     for (auto &attach_point : *probe_->attach_points)
