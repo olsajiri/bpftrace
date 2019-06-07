@@ -284,6 +284,8 @@ bool ClangParser::parse(ast::Program *program, BPFtrace &bpftrace, std::vector<s
   if (input.size() == 0)
     return true; // We occasionally get crashes in libclang otherwise
 
+  input = "#include \"asm_goto_workaround.h\"\n" + input;
+
   CXUnsavedFile unsaved_files[] =
   {
     {
@@ -320,6 +322,11 @@ bool ClangParser::parse(ast::Program *program, BPFtrace &bpftrace, std::vector<s
       .Filename = "/bpftrace/include/stdint.h",
       .Contents = stdint_h,
       .Length = stdint_h_len,
+    },
+    {
+      .Filename = "/bpftrace/include/asm_goto_workaround.h",
+      .Contents = asm_goto_workaround_h,
+      .Length = asm_goto_workaround_h_len,
     },
   };
 
