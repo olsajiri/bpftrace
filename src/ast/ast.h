@@ -305,9 +305,10 @@ public:
     : Node(loc), provider(probetypeName(provider)), target(target), ns(ns), func(func), need_expansion(need_expansion) { }
   AttachPoint(const std::string &provider,
               const std::string &target,
-              int freq,
+              const std::string &func,
+              uint64_t offset,
               location loc=location())
-    : Node(loc), provider(probetypeName(provider)), target(target), freq(freq), need_expansion(true) { }
+    : provider(probetypeName(provider)), target(target), func(func), need_expansion(true), func_offset(offset) { }
   AttachPoint(const std::string &provider,
               const std::string &target,
               uint64_t addr,
@@ -315,6 +316,17 @@ public:
               const std::string &mode,
               location loc=location())
     : Node(loc), provider(probetypeName(provider)), target(target), addr(addr), len(len), mode(mode) { }
+  AttachPoint(const std::string &provider,
+              const std::string &target,
+              uint64_t val,
+              location loc=location())
+    : provider(probetypeName(provider)), target(target), need_expansion(true)
+  {
+    if (provider == "uprobe")
+      address = val;
+    else
+      freq = val;
+  }
 
   std::string provider;
   std::string target;
