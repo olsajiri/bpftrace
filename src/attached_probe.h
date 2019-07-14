@@ -12,8 +12,8 @@ bpf_prog_type progtype(ProbeType t);
 class AttachedProbe
 {
 public:
-  AttachedProbe(Probe &probe, std::tuple<uint8_t *, uintptr_t> func);
-  AttachedProbe(Probe &probe, std::tuple<uint8_t *, uintptr_t> func, int pid);
+  AttachedProbe(Probe &probe, std::tuple<uint8_t *, uintptr_t> func, bool safe_mode);
+  AttachedProbe(Probe &probe, std::tuple<uint8_t *, uintptr_t> func, int pid, bool safe_mode);
   ~AttachedProbe();
   AttachedProbe(const AttachedProbe &) = delete;
   AttachedProbe& operator=(const AttachedProbe &) = delete;
@@ -22,7 +22,7 @@ private:
   std::string eventprefix() const;
   std::string eventname() const;
   static std::string sanitise(const std::string &str);
-  void resolve_offset();
+  void resolve_offset(bool safe_mode);
   void load_prog();
   void attach_kprobe();
   void attach_uprobe();
