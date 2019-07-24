@@ -86,6 +86,36 @@ BTF::~BTF()
 
 } // namespace bpftrace
 
+static void btf_dump_printf(void *ctx, const char *fmt, va_list args)
+{
+  std::string *ret = static_cast<std::string*>(ctx);
+  char *str;
+
+  if (vasprintf(&str, fmt, args) > 0)
+  {
+    *ret += std::string(str);
+    free(str);
+  }
+}
+
+std::string BTF::c_def(std::string& name)
+{
+  struct btf_dump *dump;
+  std::string ret = "";
+  struct btf_dump_opts opts = { .ctx = &ret };
+
+  dump = btf_dump__new(btf, NULL, &opts, btf_dump_printf);
+  if (IS_ERR(dump))
+    return ret;
+
+  __s32 id = btf__find_by_name(btf, "task_struct");
+  if (id >= 0)
+    btf_dump__dump_type(d, id);
+
+  btf_dump__free(d);
+  return ret;
+}
+
 #else // HAVE_LIBBPF
 
 // TODO(jolsa) - add this to act_helpers.h and use it globaly
@@ -99,6 +129,7 @@ BTF::BTF(unsigned char *data, unsigned int size) { }
 
 BTF::~BTF() { }
 
+std::string BTF::c_def(std::string& name) { }
 } // namespace bpftrace
 
 #endif // HAVE_LIBBPF

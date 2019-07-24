@@ -278,8 +278,21 @@ CXCursor ClangParser::ClangParserHandler::get_translation_unit_cursor() {
   return clang_getTranslationUnitCursor(translation_unit);
 }
 
+static void add_btf_definitions(ast::Program *program)
+{
+  BTF btf;
+
+  if (!btf.has_data())
+    return;
+
+  for (auto name : ast::Expression::resolve)
+    program->c_definitions += btf.c_def(name)
+}
+
 bool ClangParser::parse(ast::Program *program, BPFtrace &bpftrace, std::vector<std::string> extra_flags)
 {
+  add_btf_definitions(program);
+
   auto input = program->c_definitions;
   if (input.size() == 0)
     return true; // We occasionally get crashes in libclang otherwise

@@ -20,6 +20,7 @@ public:
   ~BTF();
 
   bool has_data(void);
+  std::string c_def(std::string& name);
 
 private:
   struct btf *btf;
