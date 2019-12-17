@@ -12,6 +12,7 @@
 #include "list.h"
 #include "bpftrace.h"
 #include "utils.h"
+#include "btf.h"
 
 namespace bpftrace {
 
@@ -286,6 +287,8 @@ void list_probes(const BPFtrace &bpftrace, const std::string &search_input)
     std::cout << probe << std::endl;
   }
 
+  // kfuncs
+  bpftrace.btf_.display_funcs();
 }
 
 } // namespace bpftrace
