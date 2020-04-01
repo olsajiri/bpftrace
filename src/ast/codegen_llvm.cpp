@@ -165,6 +165,12 @@ void CodegenLLVM::visit(Builtin &builtin)
       builtin.ident == "retval" ||
       builtin.ident == "func")
   {
+    if (builtin.type.is_kfarg)
+    {
+      expr_ = b_.CreatKFuncArg(ctx_, builtin.type, builtin.ident);
+      return;
+    }
+
     int offset;
     if (builtin.ident == "retval")
       offset = arch::ret_offset();
@@ -1149,6 +1155,12 @@ void CodegenLLVM::visit(FieldAccess &acc)
   SizedType &type = acc.expr->type;
   assert(type.type == Type::cast || type.type == Type::ctx);
   acc.expr->accept(*this);
+
+  if (type.is_kfarg)
+  {
+    expr_ = b_.CreatKFuncArg(ctx_, acc.type, acc.field);
+    return;
+  }
 
   std::string cast_type = type.is_tparg ? tracepoint_struct_ : type.cast_type;
   Struct &cstruct = bpftrace_.structs_[cast_type];
