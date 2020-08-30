@@ -68,6 +68,7 @@ public:
     has_override_return_ = std::make_optional<bool>(has_features);
     prog_kfunc_ = std::make_optional<bool>(has_features);
     has_loop_ = std::make_optional<bool>(has_features);
+    has_d_path_ = std::make_optional<bool>(has_features);
   };
 };
 
