@@ -1959,7 +1959,7 @@ Tracing block I/O sizes > 0 bytes
 - `signal(char[] signal | u32 signal)` - Send a signal to the current task
 - `strncmp(char *s1, char *s2, int length)` - Compare first n characters of two strings
 - `override(u64 rc)` - Override return value
-- `path(struct path *path)` - Returns full path
+- `path(struct path *path)` - Return full path
 
 Some of these are asynchronous: the kernel queues the event, but some time later (milliseconds) it is
 processed in user-space. The asynchronous actions are: `printf()`, `time()`, and `join()`. Both `ksym()`
@@ -2754,12 +2754,12 @@ Attaching 1 probe...
 ^C
 ```
 
-## 25. `path()`: Returns full path
+## 25. `path()`: Return full path
 
 Syntax:
 - `path(struct path *path)`
 
-Returns full path referenced by struct path pointer in argument.
+Return full path referenced by struct path pointer in argument.
 
 Examples:
 ```
