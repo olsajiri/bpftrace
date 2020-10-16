@@ -108,14 +108,14 @@ void check_banned_kretprobes(std::string const& kprobe_name) {
 #ifdef HAVE_BCC_KFUNC
 void AttachedProbe::attach_kfunc(void)
 {
-  tracing_fd_ = bpf_attach_kfunc(progfd_);
+  tracing_fd_ = 0; // bpf_attach_kfunc(progfd_);
   if (tracing_fd_ < 0)
     throw std::runtime_error("Error attaching probe: " + probe_.name);
 }
 
 int AttachedProbe::detach_kfunc(void)
 {
-  close(tracing_fd_);
+  //close(tracing_fd_);
   return 0;
 }
 #else

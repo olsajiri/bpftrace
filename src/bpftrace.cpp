@@ -23,6 +23,7 @@
 
 #include <bcc/bcc_elf.h>
 #endif
+#include <bpf/bpf.h>
 
 #include <bcc/bcc_syms.h>
 #include <bcc/perf_reader.h>
@@ -1032,6 +1033,9 @@ int BPFtrace::run_special_probe(std::string name,
 
 int BPFtrace::run(std::unique_ptr<BpfOrc> bpforc)
 {
+  int ifd[4096], ofd[4096];
+  int count = 0;
+
   int epollfd = setup_perf_events();
   if (epollfd < 0)
     return epollfd;
@@ -1101,6 +1105,16 @@ int BPFtrace::run(std::unique_ptr<BpfOrc> bpforc)
     }
   }
 
+{
+  for (auto &ap : attached_probes_)
+  {
+    ifd[count] = ap->progfd_;
+    count++;
+  }
+
+  bpf_trampoline_batch_attach(ifd, ofd, count);
+}
+
   // Kick the child to execute the command.
   if (child_)
   {
@@ -1123,6 +1137,11 @@ int BPFtrace::run(std::unique_ptr<BpfOrc> bpforc)
 
   poll_perf_events(epollfd);
   attached_probes_.clear();
+
+{
+  bpf_trampoline_batch_detach(ofd, ifd, count);
+}
+
   // finalize_ and exitsig_recv should be false from now on otherwise
   // perf_event_printer() can ignore the END_trigger() events.
   finalize_ = false;
