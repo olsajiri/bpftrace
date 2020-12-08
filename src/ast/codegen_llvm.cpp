@@ -30,6 +30,7 @@ CodegenLLVM::CodegenLLVM(Node *root, BPFtrace &bpftrace)
     : root_(root),
       module_(std::make_unique<Module>("bpftrace", context_)),
       b_(context_, *module_.get(), bpftrace),
+      dib_(*module_.get()),
       layout_(module_.get()),
       bpftrace_(bpftrace)
 {
@@ -2068,6 +2069,8 @@ void CodegenLLVM::generateProbe(Probe &probe,
   BasicBlock *entry = BasicBlock::Create(module_->getContext(), "entry", func);
   b_.SetInsertPoint(entry);
 
+  dib_.CreateFunction(func, section_name, getPointerSize());
+
   // check: do the following 8 lines need to be in the wildcard loop?
   ctx_ = func->arg_begin();
   if (probe.pred)
@@ -2088,6 +2091,8 @@ void CodegenLLVM::visit(Probe &probe)
       b_.getInt64Ty(),
       {b_.getInt8PtrTy()}, // struct pt_regs *ctx
       false);
+
+  dib_.CreateCompileUnit();
 
   // Probe has at least one attach point (required by the parser)
   auto &attach_point = (*probe.attach_points)[0];
@@ -2728,6 +2733,7 @@ void CodegenLLVM::generate_ir()
   assert(state_ == State::INIT);
   auto scoped_del = accept(root_);
   state_ = State::IR;
+  dib_.Finalize();
 }
 
 void CodegenLLVM::emit_elf(const std::string &filename)

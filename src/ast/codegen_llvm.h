@@ -5,6 +5,7 @@
 
 #include "bpftrace.h"
 #include "irbuilderbpf.h"
+#include "dibuilderbpf.h"
 #include "map.h"
 #include "visitors.h"
 
@@ -123,6 +124,7 @@ private:
   std::unique_ptr<ExecutionEngine> ee_;
   TargetMachine *TM_;
   IRBuilderBPF b_;
+  DIBuilderBPF dib_;
   DataLayout layout_;
   Value *expr_ = nullptr;
   std::function<void()> expr_deleter_; // intentionally empty
@@ -151,6 +153,11 @@ private:
   size_t getStructSize(StructType *s)
   {
     return layout_.getTypeAllocSize(s);
+  }
+
+  size_t getPointerSize(void)
+  {
+    return layout_.getPointerSize();
   }
 
   std::vector<std::tuple<BasicBlock *, BasicBlock *>> loops_;
