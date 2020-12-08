@@ -63,6 +63,11 @@ private:
   void attach_kfunc(void);
   int detach_kfunc(void);
 
+  int prog_load_xattr(enum bpf_prog_type prog_type, const char *name,
+                      const struct bpf_insn *insns, int prog_len,
+                      const char *license, unsigned kern_version,
+                      int log_level, char *log_buf, unsigned log_buf_size);
+
   Probe &probe_;
   std::tuple<uint8_t *, uintptr_t> func_;
   std::vector<int> perf_event_fds_;

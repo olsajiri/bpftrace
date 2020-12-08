@@ -113,6 +113,7 @@ get_filename_component(LIBBCC_LIBDIR ${LIBBCC_LIBRARIES} DIRECTORY)
 set(CMAKE_REQUIRED_LINK_OPTIONS -L${LIBBCC_LIBDIR})
 
 check_symbol_exists(bcc_prog_load "${LIBBCC_INCLUDE_DIRS}/bcc/libbpf.h" HAVE_BCC_PROG_LOAD)
+check_symbol_exists(bcc_prog_load_xattr "${LIBBCC_INCLUDE_DIRS}/bcc/libbpf.h" HAVE_BCC_PROG_LOAD_XATTR)
 check_symbol_exists(bcc_create_map "${LIBBCC_INCLUDE_DIRS}/bcc/libbpf.h" HAVE_BCC_CREATE_MAP)
 check_symbol_exists(bcc_elf_foreach_sym "${LIBBCC_INCLUDE_DIRS}/bcc/bcc_elf.h" HAVE_BCC_ELF_FOREACH_SYM)
 check_symbol_exists(bpf_attach_kfunc "${LIBBCC_INCLUDE_DIRS}/bcc/libbpf.h" HAVE_BCC_KFUNC)

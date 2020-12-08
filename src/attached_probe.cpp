@@ -21,6 +21,7 @@
 #include <bcc/bcc_syms.h>
 #include <bcc/bcc_usdt.h>
 #include <linux/perf_event.h>
+#include <bpf/bpf.h>
 
 namespace libbpf {
 #undef __BPF_FUNC_MAPPER
@@ -559,6 +560,24 @@ void AttachedProbe::resolve_offset_kprobe(bool safe_mode)
       path, symbol, sym_offset, func_offset, safe_mode, probe_.type);
 }
 
+int
+AttachedProbe::prog_load_xattr(enum bpf_prog_type prog_type, const char *name,
+                               const struct bpf_insn *insns, int prog_len,
+                               const char *license, unsigned kern_version,
+                               int log_level, char *log_buf, unsigned log_buf_size)
+{
+  struct bpf_load_program_attr attr = {};
+
+  attr.prog_type = prog_type;
+  attr.name = name;
+  attr.insns = insns;
+  attr.license = license;
+  if (prog_type != BPF_PROG_TYPE_TRACING && prog_type != BPF_PROG_TYPE_EXT)
+    attr.kern_version = kern_version;
+  attr.log_level = log_level;
+  return bcc_prog_load_xattr(&attr, prog_len, log_buf, log_buf_size, true);
+}
+
 void AttachedProbe::load_prog()
 {
   uint8_t *insns = std::get<0>(func_);
@@ -613,6 +632,16 @@ void AttachedProbe::load_prog()
         continue;
       }
 
+#ifdef HAVE_BCC_PROG_LOAD_XATTR
+      prog_fd_ = prog_load_xattr(namep,
+                                 reinterpret_cast<struct bpf_insn *>(insns),
+                                 prog_len,
+                                 license,
+                                 version,
+                                 log_level,
+                                 log_buf.get(),
+                                 log_buf_size);
+#else
 #ifdef HAVE_BCC_PROG_LOAD
       progfd_ = bcc_prog_load(progtype(probe_.type),
                               namep,
@@ -627,6 +656,7 @@ void AttachedProbe::load_prog()
                               log_level,
                               log_buf.get(),
                               log_buf_size);
+#endif
       if (progfd_ >= 0)
         break;
     }
