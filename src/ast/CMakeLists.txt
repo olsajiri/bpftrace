@@ -4,6 +4,7 @@ add_library(ast
   codegen_llvm.cpp
   field_analyser.cpp
   irbuilderbpf.cpp
+  dibuilderbpf.cpp
   printer.cpp
   semantic_analyser.cpp
   callback_visitor.cpp
