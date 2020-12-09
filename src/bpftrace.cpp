@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <bpf/bpf.h>
 
 #ifdef HAVE_BCC_ELF_FOREACH_SYM
 #include <linux/elf.h>
@@ -889,7 +890,7 @@ std::vector<std::unique_ptr<AttachedProbe>> BPFtrace::attach_usdt_probe(
   if (feature_->has_uprobe_refcnt() || !(file_activation && probe.path.size()))
   {
     ret.emplace_back(
-        std::make_unique<AttachedProbe>(probe, func, pid, *feature_));
+        std::make_unique<AttachedProbe>(probe, func, -1, pid, *feature_));
     return ret;
   }
 
@@ -950,7 +951,7 @@ std::vector<std::unique_ptr<AttachedProbe>> BPFtrace::attach_usdt_probe(
       }
 
       ret.emplace_back(
-          std::make_unique<AttachedProbe>(probe, func, pid_parsed, *feature_));
+          std::make_unique<AttachedProbe>(probe, func, -1, pid_parsed, *feature_));
       break;
     }
   }
@@ -963,7 +964,8 @@ std::vector<std::unique_ptr<AttachedProbe>> BPFtrace::attach_usdt_probe(
 
 std::vector<std::unique_ptr<AttachedProbe>> BPFtrace::attach_probe(
     Probe &probe,
-    const BpfOrc &bpforc)
+    const BpfOrc &bpforc,
+    int btf_fd)
 {
   std::vector<std::unique_ptr<AttachedProbe>> ret;
 
@@ -1003,13 +1005,13 @@ std::vector<std::unique_ptr<AttachedProbe>> BPFtrace::attach_probe(
     else if (probe.type == ProbeType::watchpoint)
     {
       ret.emplace_back(
-          std::make_unique<AttachedProbe>(probe, func->second, pid, *feature_));
+          std::make_unique<AttachedProbe>(probe, func->second, btf_fd, pid, *feature_));
       return ret;
     }
     else
     {
       ret.emplace_back(
-          std::make_unique<AttachedProbe>(probe, func->second, safe_mode_));
+          std::make_unique<AttachedProbe>(probe, func->second, btf_fd, safe_mode_));
       return ret;
     }
   }
@@ -1056,7 +1058,7 @@ int BPFtrace::run_special_probe(std::string name,
   {
     if ((*probe).attach_point == name)
     {
-      auto aps = attach_probe(*probe, bpforc);
+      auto aps = attach_probe(*probe, bpforc, -1);
 
       trigger();
       return aps.size() ? 0 : -1;
@@ -1064,6 +1066,28 @@ int BPFtrace::run_special_probe(std::string name,
   }
 
   return 0;
+}
+
+int BPFtrace::load_btf(const BpfOrc &bpforc)
+{
+  int btf_fd = 0;
+
+  auto sec = bpforc.sections_.find(".BTF");
+  if (sec == bpforc.sections_.end())
+    return 0;
+
+  uint8_t *btf = std::get<0>(sec->second);
+  int btf_len  = std::get<1>(sec->second);
+  auto log_buf = std::make_unique<char[]>(log_size_);
+
+  btf_fd = bpf_load_btf(btf, btf_len, log_buf.get(), log_size_, true);
+  if (btf_fd < 0)
+  {
+    LOG(WARNING) << "Failed to load BTF, moving on without.";
+    btf_fd = 0;
+  }
+
+  return btf_fd;
 }
 
 int BPFtrace::run(std::unique_ptr<BpfOrc> bpforc)
@@ -1105,6 +1129,8 @@ int BPFtrace::run(std::unique_ptr<BpfOrc> bpforc)
     }
   }
 
+  int btf_fd = load_btf(*bpforc.get());
+
   // The kernel appears to fire some probes in the order that they were
   // attached and others in reverse order. In order to make sure that blocks
   // are executed in the same order they were declared, iterate over the probes
@@ -1114,7 +1140,7 @@ int BPFtrace::run(std::unique_ptr<BpfOrc> bpforc)
   for (auto probes = probes_.begin(); probes != probes_.end(); ++probes)
   {
     if (!attach_reverse(*probes)) {
-      auto aps = attach_probe(*probes, *bpforc.get());
+      auto aps = attach_probe(*probes, *bpforc.get(), btf_fd);
 
       if (aps.empty())
         return -1;
@@ -1127,7 +1153,7 @@ int BPFtrace::run(std::unique_ptr<BpfOrc> bpforc)
   for (auto r_probes = probes_.rbegin(); r_probes != probes_.rend(); ++r_probes)
   {
     if (attach_reverse(*r_probes)) {
-      auto aps = attach_probe(*r_probes, *bpforc.get());
+      auto aps = attach_probe(*r_probes, *bpforc.get(), btf_fd);
 
       if (aps.empty())
         return -1;
@@ -1171,7 +1197,8 @@ int BPFtrace::run(std::unique_ptr<BpfOrc> bpforc)
 
   // Calls perf_reader_free() on all open perf buffers.
   open_perf_buffers_.clear();
-
+  if (btf_fd)
+    close(btf_fd);
   return 0;
 }
 

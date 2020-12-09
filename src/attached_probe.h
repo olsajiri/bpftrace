@@ -21,10 +21,10 @@ class AttachedProbe
 public:
   AttachedProbe(Probe &probe,
                 std::tuple<uint8_t *, uintptr_t> func,
-                bool safe_mode);
+                int btf_fd, bool safe_mode);
   AttachedProbe(Probe &probe,
                 std::tuple<uint8_t *, uintptr_t> func,
-                int pid,
+                int btf_fd, int pid,
                 BPFfeature &feature);
   ~AttachedProbe();
   AttachedProbe(const AttachedProbe &) = delete;
@@ -65,7 +65,7 @@ private:
 
   int prog_load_xattr(enum bpf_prog_type prog_type, const char *name,
                       const struct bpf_insn *insns, int prog_len,
-                      const char *license, unsigned kern_version,
+                      int btf_fd, const char *license, unsigned kern_version,
                       int log_level, char *log_buf, unsigned log_buf_size);
 
   Probe &probe_;
@@ -76,6 +76,7 @@ private:
 #ifdef HAVE_BCC_KFUNC
   int tracing_fd_ = -1;
 #endif
+  int btf_fd_;
   std::function<void()> usdt_destructor_;
 };
 

@@ -204,6 +204,7 @@ protected:
   std::vector<Probe> special_probes_;
 
 private:
+  int load_btf(const BpfOrc &bpforc);
   int run_special_probe(std::string name,
                         const BpfOrc &bpforc,
                         void (*trigger)(void));
@@ -224,7 +225,8 @@ private:
       bool file_activation);
   std::vector<std::unique_ptr<AttachedProbe>> attach_probe(
       Probe &probe,
-      const BpfOrc &bpforc);
+      const BpfOrc &bpforc,
+      int btf_fd);
   int setup_perf_events();
   void poll_perf_events(int epollfd, bool drain = false);
   int print_map_hist(IMap &map, uint32_t top, uint32_t div);

@@ -134,8 +134,8 @@ int AttachedProbe::detach_kfunc(void)
 }
 #endif // HAVE_BCC_KFUNC
 
-AttachedProbe::AttachedProbe(Probe &probe, std::tuple<uint8_t *, uintptr_t> func, bool safe_mode)
-  : probe_(probe), func_(func)
+AttachedProbe::AttachedProbe(Probe &probe, std::tuple<uint8_t *, uintptr_t> func, int btf_fd, bool safe_mode)
+  : probe_(probe), func_(func), btf_fd_(btf_fd)
 {
   load_prog();
   if (bt_verbose)
@@ -180,9 +180,10 @@ AttachedProbe::AttachedProbe(Probe &probe, std::tuple<uint8_t *, uintptr_t> func
 
 AttachedProbe::AttachedProbe(Probe &probe,
                              std::tuple<uint8_t *, uintptr_t> func,
+                             int btf_fd,
                              int pid,
                              BPFfeature &feature)
-    : probe_(probe), func_(func)
+    : probe_(probe), func_(func), btf_fd_(btf_fd)
 {
   load_prog();
   switch (probe_.type)
@@ -563,11 +564,12 @@ void AttachedProbe::resolve_offset_kprobe(bool safe_mode)
 int
 AttachedProbe::prog_load_xattr(enum bpf_prog_type prog_type, const char *name,
                                const struct bpf_insn *insns, int prog_len,
-                               const char *license, unsigned kern_version,
+                               int btf_fd, const char *license, unsigned kern_version,
                                int log_level, char *log_buf, unsigned log_buf_size)
 {
   struct bpf_load_program_attr attr = {};
 
+  attr.attach_btf_id = btf_fd;
   attr.prog_type = prog_type;
   attr.name = name;
   attr.insns = insns;
@@ -636,6 +638,7 @@ void AttachedProbe::load_prog()
       prog_fd_ = prog_load_xattr(namep,
                                  reinterpret_cast<struct bpf_insn *>(insns),
                                  prog_len,
+                                 btf_fd,
                                  license,
                                  version,
                                  log_level,
