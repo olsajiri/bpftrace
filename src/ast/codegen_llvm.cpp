@@ -50,7 +50,6 @@ CodegenLLVM::CodegenLLVM(Node *root, BPFtrace &bpftrace)
   auto RM = Reloc::Model();
   TM_ = target->createTargetMachine(targetTriple, "generic", "", opt, RM);
   module_->setDataLayout(TM_->createDataLayout());
-  layout_ = DataLayout(module_.get());
   orc_ = std::make_unique<BpfOrc>(TM_);
 }
 
